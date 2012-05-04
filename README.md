@@ -7,3 +7,8 @@ PossumSim
 * repeat with motion
 * report varience 
 
+## Dirs 
+
+    /Volumes/Serena/rs-fcMRI_motion_simulation/10653_4dtemplate
+    $FSLDIR/data/possum/brain.nii.gz
+
