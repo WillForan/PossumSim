@@ -122,7 +122,7 @@ for jobID in `seq 1 $totaljobs`; do
    
    # sleep until a job opens up
    while [ $jobcount  -ge $maxjobs ]; do
-     echo "sleeping for $sleeptime: $jobcount > $maxjobs"
+     echo "still on $jobID, sleeping for $sleeptime: $jobcount > $maxjobs"
      sleep $sleeptime
      # update job count to see if anything has finished
      jobcount=$(jobs|wc -l)
