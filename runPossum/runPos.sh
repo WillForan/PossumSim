@@ -93,8 +93,17 @@ source mkBrain.src.sh
 set -e # die on error
 
 for jobID in `seq 1 $totaljobs`; do
+
+ # stdout directed here
  logFile=${logDir}/$jobID.log 
+
+ # check if job has finished, skip
+ [ -r $logFile ] && grep "^Possum finished" $logFile && echo "$jobID already complete" && continue
+
+ # give the log a start date
  date > $logFile
+
+ # launch the Goliath 
  possum                           \
     --nproc=$totaljobs            \
     --procid=$jobID               \
@@ -108,15 +117,18 @@ for jobID in `seq 1 $totaljobs`; do
     -o $simDir/possum_${jobID}    \
       >> $logFile &
  
+   # update job count
    jobcount=$(jobs|wc -l)
    
    # sleep until a job opens up
-   while [ $jobcount  -gt $maxjobs ]; do
-     # allow dynamically update how many jobs to run and how long to sleep
-     source $maxjobsSrc 
+   while [ $jobcount  -ge $maxjobs ]; do
      echo "sleeping for $sleeptime: $jobcount > $maxjobs"
      sleep $sleeptime
+     # update job count to see if anything has finished
      jobcount=$(jobs|wc -l)
+
+     # allow us to dynamically update how many jobs to run and how long to sleep
+     source $maxjobsSrc 
    done
 done
 

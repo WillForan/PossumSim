@@ -1,2 +1,2 @@
-  maxjobs=22
+  maxjobs=26
 sleeptime=100
