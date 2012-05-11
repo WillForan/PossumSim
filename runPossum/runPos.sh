@@ -1,18 +1,16 @@
 #!/usr/bin/env bash
 
 #
-# possum --nproc=128 --procid=15 \
-#        -o sim/act1.5_15_zero_1.5_15/possum_15 \
-#        -m variables/zero_1.5_15motion \
-#        -i defaults/possum_10653_fast.nii.gz \
-#        -x defaults/MRpar_3T \
-#        -f defaults/slcprof \
-#        -p pulse_15 \
-#        --activ4D=variables/act1.5_15.nii.gz \
-#        --activt4D=variables/act1.5_15_time
+# generate possum input (brains)
+# and run possum
 #
-# roiactbrain
+# to regenerate brains use: REGEN=1 ./runPos.sh
+#   otherwise if files exist, they will be used
 #
+
+
+#
+###### ROIActBrain
 #
 #=== Input a:
 #3drefit -TR 1.500 rnswktm_functional_6_100voxelmean_scale1_1mm.nii.gz
@@ -33,30 +31,36 @@
 
 
 ### setup environment
+#possumBrain="/opt/ni_tools/fsl_4.1.9/data/possum/brain.nii.gz"
+#   MNIBrain="/Users/lncd/standard/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c.nii"
+   MNIBrain="/data/Luna1/ni_tools/standard_templates/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c.nii"
+possumBrain="/data/Luna1/ni_tools/fsl_4.1.8/data/possum/brain.nii.gz"
 ROIActBrain="inputs/10653_POSSUM4D_bb244_fullFreq_RPI.nii.gz"
-possumBrain="/opt/ni_tools/fsl_4.1.9/data/possum/brain.nii.gz"
-   MNIBrain="/Users/lncd/standard/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c.nii"
 
+maxjobsSrc="maxjobs.src.sh"
 totaljobs=120
-  maxjobs=10
-sleeptime=100
+source $maxjobsSrc
 
-       TR=1.5
-   numvol=15
+# relax time and number of volumes to simulate
+    TR=1.5
+numvol=15
 
 ##### Set up inputs to possum
 
 # motion and tr agnostic files
             MRF="inputs/MRpar_3T"
             RFF="inputs/slcprof"
-         BrainF="inputs/MNIpaddedpossumBrain.nii.gz"            # **
-        
-# motion and tr dependent files 
-        MotionF="inputs/${TR}TR_${numvol}vol/zeromotion"
-         PulseF="inputs/${TR}TR_${numvol}vol/pulse/pulse_15"
-    ActivationF="inputs/${TR}TR_${numvol}vol/activation.nii.gz" # **
-ActivationTimeF="inputs/${TR}TR_${numvol}vol/4DactivationTime"
+         BrainF="inputs/MNIpaddedPossumBrain.nii.gz"    # **
 
+# motion and tr dependent files 
+inDir="inputs/${TR}TR_${numvol}vol"
+
+        MotionF="$inDir/zeromotion"
+         PulseF="$inDir/pulse/pulse_15"
+    ActivationF="$inDir/activation.nii.gz"              # **
+ActivationTimeF="$inDir/4DactivationTime"
+
+# outputs (log and simulation)
 outDir="output/zeroMotion_${TR}TR_${numvol}vol"
 simDir="$outDir/sim"
 logDir="$outDir/log"
@@ -67,20 +71,45 @@ for d in "$simDir" "$logDir"; do
 done
 
 
+#################################
+# make brains
+#################################
+
 # make input brain
-[ ! -r "$BrainF" ] && 3dresample -inset $possumBrain -master $MNIBrain -prefix $BrainF
+if [ ! -r "$BrainF" -o -n "$REGEN" ]; then 
+  # where the temp file goes
+  mnirpi="inputs/temp/mni_RPI.nii.gz"
+  # resample mni into RPI
+  3dresample -orient RPI -inset $MNIBrain -prefix  $mnirpi
+  # resample possum into mni RPI (add padding)
+  3dresample -inset $possumBrain -master $mnirpi -prefix $BrainF  -overwrite
+fi
 
 # make activation brain
-if [ ! -r "$ActivationF" ]; then
-  # crop the number of values wanted
-  3dTcat -prefix "$ActivationF" "$ROIActBrain[0..$((($numvol-1)))]" 
-  # for new TR
+if [ ! -r "$ActivationF" -o -n "$REGEN" ]; then
+  # where the temp file goes
+  acttemp="inputs/temp/trunc$numvol-tmp.nii.gz"
+  # crop the number of values wanted -- takes a while try to only do once
+  [ -r $acttemp ] || 3dTcat -prefix "$acttemp" "$ROIActBrain[0..$((($numvol-1)))]" 
+  # resample to the input brain
+  3dresample -inset "$acttemp" -master $BrainF -prefix $ActivationF -overwrite
+  # set TR
   3drefit -TR $TR "$ActivationF" 
 fi
 
+[ -n "$REGEN" ] && echo "done regenerating brains" && exit
+
+
+
+######################################################
 ### run possum
+######################################################
+
 set -e # die on error
+
 for jobID in `seq 1 $totaljobs`; do
+ logFile=${logDir}/$jobID.log 
+ date > $logFile
  possum                           \
     --nproc=$totaljobs            \
     --procid=$jobID               \
@@ -92,15 +121,18 @@ for jobID in `seq 1 $totaljobs`; do
     --activ4D=${ActivationF}      \
     --activt4D=${ActivationTimeF} \
     -o $simDir/possum_${jobID}    \
-      > ${logDir}_$jobID.log &
+      >> $logFile &
  
    jobcount=$(jobs|wc -l)
    
    # sleep until a job opens up
    while [ $jobcount  -gt $maxjobs ]; do
+     # allow dynamically update how many jobs to run and how long to sleep
+     source $maxjobsSrc 
      echo "sleeping for $sleeptime: $jobcount > $maxjobs"
      sleep $sleeptime
      jobcount=$(jobs|wc -l)
    done
 done
+
 set +e
