@@ -46,10 +46,11 @@ possumBrain="/data/Luna1/ni_tools/fsl_4.1.8/data/possum/brain.nii.gz"
 outDir="$r/output/zeroMotion_${TR}TR_${numvol}vol"
 simDir="$outDir/sim"
 logDir="$outDir/log"
+preDir="$outDir/preproc"
 
 
 ### make all the paths ###
-for d in "$simDir" "$logDir"; do
+for d in "$simDir" "$logDir" "$preDir"; do
    [ ! -d $d ] && mkdir -p $d
 done
 
@@ -152,5 +153,9 @@ echo "generating image"
 image=${simDir}/brainImage
 [ -r $image ] || signal2image -i $combined -a --homo -p $PulseF -o $image 2>&1 | tee $logDir/image.log
 
+# process possum simulation
+echo "generating preproc files"
+cd  $preDir
+../../../../activation/restPreproc_possum.bash -4d ../sim/brainImage_abs.nii.gz
 
 set +e

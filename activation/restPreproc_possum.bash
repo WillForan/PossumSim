@@ -2,12 +2,20 @@
 set -e
 set -x
 
-templateT1=/Volumes/Serena/rs-fcMRI_motion_simulation/10653_4dtemplate/mprage/mprage_bet.nii.gz
-templateWarpCoef=/Volumes/Serena/rs-fcMRI_motion_simulation/10653_4dtemplate/mprage/mprage_warpcoef.nii.gz
-templateGMMask=/Volumes/Serena/rs-fcMRI_motion_simulation/10653_4dtemplate/mprage/10653_bb244_gmMask_fast_bin+tlrc
-mniTemplate=$HOME/standard/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c_brain_3mm
+# Subject
+       scriptdir="$(dirname $0)"
+      templateT1="$scriptdir/inputs/10653/mprage_bet.nii.gz"                # struct ref for flirt lin warp
+templateWarpCoef="$scriptdir/inputs/10653/mprage_warpcoef.nii.gz"           # applywarp (x2)
+  templateGMMask="$scriptdir/inputs/10653/10653_bb244_gmMask_fast_bin+tlrc" # last 3dcalc
+# skynet only
+#templateT1=/Volumes/Serena/rs-fcMRI_motion_simulation/10653_4dtemplate/mprage/mprage_bet.nii.gz
+#templateWarpCoef=/Volumes/Serena/rs-fcMRI_motion_simulation/10653_4dtemplate/mprage/mprage_warpcoef.nii.gz
+#templateGMMask=/Volumes/Serena/rs-fcMRI_motion_simulation/10653_4dtemplate/mprage/10653_bb244_gmMask_fast_bin+tlrc
+
+# MNI
 mniTemplate_1mm=$HOME/standard/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c_brain
-mniMask=$HOME/standard/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c_mask_3mm.nii
+    mniTemplate=$HOME/standard/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c_brain_3mm
+        mniMask=$HOME/standard/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c_mask_3mm.nii
 
 #if no parameters are passed in, then print help and exit.
 if [ $# -eq 0 ]; then
@@ -15,7 +23,9 @@ if [ $# -eq 0 ]; then
     exit 0
 fi
 
+# provided as input argument
 funcFile=
+# detected by fslhd of activation brain
 TR=
 smoothing_kernel=6
 chop_vols=5 #3dbp says 1 transient issue with 4
@@ -41,6 +51,7 @@ done
 
 sigma=$( echo "scale=5; $smoothing_kernel/2.355" | bc )
 
+# like funcFile="$(dirname $funcNifti )/$(basename $(basename $funcNifti .gz) .nii)"
 if [ ${funcFile:(-7)} = ".nii.gz" ]; then
     if [ ! -f ${funcFile} ]; then
 	echo -e "Raw functional 4D file: $funcFile does not exist.\nPass in as -4d parameter. Exiting.\n"
@@ -71,17 +82,19 @@ fi
 
 #obtain TR from func file (original funcFile from POSSUM is trustworthy)
 #round to 3 dec
-detectTR=$( fslhd Brain_act1.5_15_zero_1.5_15_abs.nii.gz | grep "^pixdim4" | perl -pe 's/pixdim4\s+(\d+)/\1/' | xargs printf "%1.3f" )
+detectTR=$( fslhd ${funcNifti} | grep "^pixdim4" | perl -pe 's/pixdim4\s+(\d+)/\1/' | xargs printf "%1.3f" )
 
 #remove initial volumes corresponding to discarded volumes from scanner
 #spins have not reached steady state yet and intensities are quite sharp
 
+truncOutput="$(basename $funcFile)_trunc${chop_vols}"
 numVols=$( fslhd ${funcNifti}  | grep '^dim4' | perl -pe 's/dim4\s+(\d+)/\1/' )
-fslroi ${funcFile} ${funcFile}_trunc${chop_vols} ${chop_vols} $((${numVols}-1)) #fslroi uses 0-based indexing
+
+fslroi  ${funcFile} $truncOutput ${chop_vols} $((${numVols}-1)) #fslroi uses 0-based indexing
 
 #ensure that chopped files are used moving forward
-funcFile=${funcFile}_trunc${chop_vols}
-funcNifti=${funcFile}.nii.gz
+funcFile=$truncOutput 
+funcNifti=${truncOutput}.nii.gz
 
 #1. motion correction
 if [ ! -f m_${funcNifti} ]; then
@@ -99,9 +112,9 @@ if [ ! -f tm_${funcNifti} ]; then
 fi
 
 #skull strip mean functional
-fslmaths tm_${funcFile} -Tmean tm_mean_${funcFile} #generate mean functional
-bet tm_mean_${funcFile} ktm_mean_${funcFile} -R -f 0.4 -m #skull strip mean functional
-fslmaths tm_${funcFile} -mas ktm_mean_${funcFile}_mask ktm_${funcFile} #apply skull strip mask to 4d file
+fslmaths tm_${funcFile} -Tmean tm_mean_${funcFile}                     # generate mean functional
+bet tm_mean_${funcFile} ktm_mean_${funcFile} -R -f 0.4 -m              # skull strip mean functional
+fslmaths tm_${funcFile} -mas ktm_mean_${funcFile}_mask ktm_${funcFile} # apply skull strip mask to 4d file
 
 #compute the median intensity (prior to warp) of voxels within the BET mask
 #(couldn't I just use ktm_${funcFile} since that has the mask applied?)
