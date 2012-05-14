@@ -7,11 +7,11 @@
 # * assumes exists:
 #     * <possumBrain> - location of brain include with possom
 #     * <MNIBrain>    - the location of base mni brain
-#     * <ROIActBrain> - ROI masked activation of most motionless subject
+#     * <ROIActBrain> - ROI masked activation of most motionless subject  in TE seconds (../activation/createTemplate.bash )
 #
 # * creates
-#     * <BrainF>      - brain to simulate in the scanner (segmented tissue in 3 subbricks)
-#     * <ActivationF> - activation pattern in TE seconds
+#     * <BrainF>      - brain to simulate in the scanner (segmented tissue in 3 subbricks) (-i)
+#     * <ActivationF> - activation pattern (--activ4D)
 #
 # * <BrainF>      =>  <possumBrain> resampled with master <MNIBrain> in RPI
 # * <ActivationF> => truncate <ROIActBrain>, resampled to <BrainF>, reset TR
@@ -35,7 +35,7 @@ if [ ! -r "$ActivationF" -o -n "$REGEN" ]; then
   [ -r $acttemp ] || 3dTcat -prefix "$acttemp" "$ROIActBrain[0..$((($numvol-1)))]" 
   # resample to the input brain
   3dresample -inset "$acttemp" -master $BrainF -prefix $ActivationF -overwrite
-  # set TR
+  # set TR, should already be 1.5 from createTemplate
   3drefit -TR $TR "$ActivationF" 
 fi
 
@@ -44,7 +44,7 @@ fi
 
 
 
-###### ROIActBrain history
+###### ROIActBrain history (../activation/createTemplate.bash )
 #
 #=== Input a:
 #3drefit -TR 1.500 rnswktm_functional_6_100voxelmean_scale1_1mm.nii.gz
