@@ -84,7 +84,7 @@ ActivationTimeF="$inDir/4DactivationTime"
 # if REGEN is non-zero length, recreated files and exit
 
 # check that the brain files exist, or create them
-source mkBrain.src.sh
+source mkBrains.src.sh
 
 ######################################################
 ### run possum
@@ -92,6 +92,7 @@ source mkBrain.src.sh
 
 set -e # die on error
 
+#for jobID in `seq 0 $((($totaljobs-1)))`; do # start at 1
 for jobID in `seq 1 $totaljobs`; do
 
  # stdout directed here
@@ -120,6 +121,9 @@ for jobID in `seq 1 $totaljobs`; do
    # update job count
    jobcount=$(jobs|wc -l)
    
+   # some output
+   echo "submited job $jobID, jobcount $jobscount"
+
    # sleep until a job opens up
    while [ $jobcount  -ge $maxjobs ]; do
      echo "still on $jobID, sleeping for $sleeptime: $jobcount > $maxjobs"
@@ -131,5 +135,22 @@ for jobID in `seq 1 $totaljobs`; do
      source $maxjobsSrc 
    done
 done
+
+# wait for all possums to finish (better to check job|wc -l ?)
+while pgrep possum; do
+     echo "still have possum job running, sleeping $sleeptime"
+     sleep $sleeptime
+done
+
+# put it all together
+echo "summing possums"
+combined="${simDir}/combined"
+[ -r $combined ] || possum_sum -i ${simDir}/possum_ -o $combined -n ${totaljobs} -v 2>&1 | tee $logDir/combined.log
+
+# get an image
+echo "generating image"
+image=${simDir}/brainImage
+[ -r $image ] || signal2image -i $combined -a --homo -p $PulseF -o $image 2>&1 | tee $logDir/image.log
+
 
 set +e
