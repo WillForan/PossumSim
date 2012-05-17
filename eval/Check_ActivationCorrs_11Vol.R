@@ -2,11 +2,15 @@ setwd(file.path(getMainDir(), "rs-fcMRI_Motion"))
 
 library(fmri)
 library(oro.nifti)
+library(plyr)
 origActiv15_scale1_gm244 <- "/Volumes/Serena/possum_speedup_tests_xsede/gitFromBlacklight/origactiv_first15.nii.gz" 
-possumSim10_scale1_gm244 <- "/Volumes/Serena/possum_speedup_tests_xsede/gitFromBlacklight/nbswktm_Brain_act1.5_15_zero_1.5_15_abs_trunc5_6_scale1_1mm_244GMMask.nii"
+#possumSim10_scale1_gm244 <- "/Volumes/Serena/possum_speedup_tests_xsede/gitFromBlacklight/nbswktm_Brain_act1.5_15_zero_1.5_15_abs_trunc5_6_scale1_1mm_244GMMask.nii"
+possumSim10_scale1_gm244 <- "/Volumes/Serena/rs-fcMRI_motion_simulation/10653_4dtemplate/simTestMay2012/nbswkmt_Brain_act1.5_15_zero_1.5_15_abs_trunc5_6_scale1_1mm_244GMMask.nii.gz"
+spheres_int <- "/Volumes/Serena/rs-fcMRI_motion_simulation/10653_4dtemplate/mprage/10653_bb244_gmMask_fast.nii.gz"
 
 origActiv15Mat <- readNIfTI(origActiv15_scale1_gm244)@.Data
 possumSim10Mat <- readNIfTI(possumSim10_scale1_gm244)@.Data
+spheresMat <- readNIfTI(spheres_int)@.Data
     
 #origActiv15Mat <- extract.data(read.NIFTI(origActiv15_scale1_gm244))
 #possumSim10 <- extract.data(read.NIFTI(possumSim10_scale1_gm244))
@@ -58,3 +62,8 @@ voxCorr <- aaply(resampVoxMat, 2, function(suba) {
     })
 
 mean(voxCorr, na.rm=TRUE) #looks promising! :P
+
+#try per-roi correlation
+for (n in sort(unique((as.vector(spheresMat))))) {
+  
+}
