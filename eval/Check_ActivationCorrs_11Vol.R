@@ -1,4 +1,4 @@
-setwd(file.path(getMainDir(), "rs-fcMRI_Motion"))
+#setwd(file.path(getMainDir(), "rs-fcMRI_Motion"))
 
 library(fmri)
 library(oro.nifti)
@@ -10,22 +10,23 @@ spheres_int <- "/Volumes/Serena/rs-fcMRI_motion_simulation/10653_4dtemplate/mpra
 
 origActiv15Mat <- readNIfTI(origActiv15_scale1_gm244)@.Data
 possumSim10Mat <- readNIfTI(possumSim10_scale1_gm244)@.Data
-spheresMat <- readNIfTI(spheres_int)@.Data
+spheresMat     <- readNIfTI(spheres_int)@.Data
     
 #origActiv15Mat <- extract.data(read.NIFTI(origActiv15_scale1_gm244))
 #possumSim10 <- extract.data(read.NIFTI(possumSim10_scale1_gm244))
 
 #obtain indices of non-zero voxels in first volume (will be the same for all other vols) 
 origActivPresent <- which(origActiv15Mat[,,,1] != 0.0, arr.ind=TRUE)
-simActivPresent <- which(possumSim10Mat[,,,1] != 0.0, arr.ind=TRUE)
+simActivPresent  <- which(possumSim10Mat[,,,1] != 0.0, arr.ind=TRUE)
 
+# num vols in 4th dim (time)
 origVols <- dim(origActiv15Mat)[4]
-simVols <- dim(possumSim10Mat)[4]
+simVols  <- dim(possumSim10Mat)[4]
 
 #note that the orig is in 1.5s and contains 15 volumes (22.5 s)
 #the sim is in 2.05s and contains 10 vols (20.5s)
 
-#sanity check
+#sanity check: read in masked files -- 244 regiosn should be the same
 identical(origActivPresent, simActivPresent)
 
 #interpolate each TS to the same sampling rate
@@ -37,23 +38,37 @@ identical(origActivPresent, simActivPresent)
 #
 ##simpler is seewave
 targetSampFreq <- 1/1.0 #TR=1.0s
-origTR <- 1.5
-origFreq <- 1/origTR
-simTR <- 2.05
-simFreq <- 1/simTR
+origTR         <- 1.5
+origFreq       <- 1/origTR
+simTR          <- 2.05
+simFreq        <- 1/simTR
 
 numsecs <- 19
 
-resampTime <- seq(0, (numsecs-1)*targetSampFreq, by=targetSampFreq)
-origTime <- seq(0, (origVols-1)*origTR, by=origTR)
-simTime <- seq(0, (simVols-1)*simTR, by=simTR)
+resampTime <- seq(0, (numsecs-1) *targetSampFreq, by=targetSampFreq) #0 ... 18    by 1
+origTime   <- seq(0, (origVols-1)*origTR,         by=origTR)         #0 ... 21    by 1.5
+simTime    <- seq(0, (simVols-1) *simTR,          by=simTR)          #0 ... 18.45 by 2.05
 
-resampVoxMat <- array(NA, dim=c(2, nrow(origActivPresent), length(resampTime)), dimnames=list(orig_sim=c("orig", "sim"), vox=NULL, time=resampTime))
+# initialize array {orig,sim} by 80342 by 19
+resampVoxMat <- array(NA, dim=c(2, nrow(origActivPresent), length(resampTime)),               # 2x__x__
+                          dimnames=list(orig_sim=c("orig", "sim"), vox=NULL, time=resampTime)
+                     )
 
-#simple linear interpolation here
+# per voxel simple linear interpolation here
+# for each voxel (row) of activation in mask (Present)
+# using known x:y pair time:activation
+# to approx values at resampTime
 for (i in 1:nrow(origActivPresent)) {
-  resampVoxMat["orig",i,] <- approx(origTime, origActiv15Mat[cbind(pracma::repmat(origActivPresent[i,], origVols, 1), 1:origVols)], xout=resampTime)$y
-  resampVoxMat["sim", i,] <- approx(simTime, possumSim10Mat[cbind(pracma::repmat(simActivPresent[i,], simVols, 1), 1:simVols)], xout=resampTime)$y
+  resampVoxMat["orig",i,] <- approx(origTime, 
+                                    origActiv15Mat[cbind(pracma::repmat(origActivPresent[i,], origVols, 1), 1:origVols)], 
+                                    # i.e. origActiv15Mat[origActivPresent[i,1],origActivPresent[i,2],origActivPresent[i,3],1:15],
+                                    # e.g. i=1, origA..=80,53,40 => origActiv15Mat[80,53,40,]
+                                    # instead rep  origActive for as many vols and column bind the vols to index matrix
+                                    # making 80,53,40,1; 90,53,40,2; ....
+                                    xout=resampTime)$y
+  resampVoxMat["sim", i,] <- approx(simTime, 
+                                    possumSim10Mat[cbind(pracma::repmat(simActivPresent[i,], simVols, 1), 1:simVols)], 
+                                    xout=resampTime)$y
 }
 
 #and if that works, correlate each voxel time series between the original and sim.
@@ -63,7 +78,24 @@ voxCorr <- aaply(resampVoxMat, 2, function(suba) {
 
 mean(voxCorr, na.rm=TRUE) #looks promising! :P
 
-#try per-roi correlation
-for (n in sort(unique((as.vector(spheresMat))))) {
-  
+# initialize array for all rois
+rois <- array(NA,264);
+#try per-roi correlation 
+#for (n in sort(unique((as.vector(spheresMat))))) { # all rois in spheresMat
+for (n in 1:264) {
+   # find indexes of active region matching this roi
+   roi  <- which(spheresMat[simActivPresent] == n)
+   
+   # skip if there are none
+   if( length(roi) < 1 ) next
+
+   # take the mean across voxels of roi, and get corr
+   rois[n]<- cor( apply(resampVoxMat["orig",roi, ] , 2 , FUN=mean ),
+                  apply(resampVoxMat["sim", roi, ] , 2 , FUN=mean )  ) 
+   #print(paste(c,n))
 }
+mean(abs(rois), na.rm=TRUE)
+min(abs(rois), na.rm=TRUE)
+max(abs(rois), na.rm=TRUE)
+
+sort(abs(rois))
