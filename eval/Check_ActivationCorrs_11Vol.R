@@ -8,10 +8,12 @@ origActiv15_scale1_gm244 <- "/Volumes/Serena/possum_speedup_tests_xsede/gitFromB
 possumSim10_scale1_gm244 <- "/Volumes/Serena/rs-fcMRI_motion_simulation/10653_4dtemplate/simTestMay2012/nbswkmt_Brain_act1.5_15_zero_1.5_15_abs_trunc5_6_scale1_1mm_244GMMask.nii.gz"
 spheres_int <- "/Volumes/Serena/rs-fcMRI_motion_simulation/10653_4dtemplate/mprage/10653_bb244_gmMask_fast.nii.gz"
 
-origActiv15Mat <- readNIfTI(origActiv15_scale1_gm244)@.Data
-possumSim10Mat <- readNIfTI(possumSim10_scale1_gm244)@.Data
-spheresMat     <- readNIfTI(spheres_int)@.Data
-    
+# only load nifitis if it hasn't been done before
+if( ! length(grep("origActiv15Mat",ls() )) ) {
+   origActiv15Mat <- readNIfTI(origActiv15_scale1_gm244)@.Data
+   possumSim10Mat <- readNIfTI(possumSim10_scale1_gm244)@.Data
+   spheresMat     <- readNIfTI(spheres_int)@.Data
+}
 #origActiv15Mat <- extract.data(read.NIFTI(origActiv15_scale1_gm244))
 #possumSim10 <- extract.data(read.NIFTI(possumSim10_scale1_gm244))
 
@@ -80,8 +82,9 @@ mean(voxCorr, na.rm=TRUE) #looks promising! :P
 
 # initialize array for all rois
 rois <- array(NA,264);
-#try per-roi correlation 
+# try per-roi correlation 
 #for (n in sort(unique((as.vector(spheresMat))))) { # all rois in spheresMat
+pdf('cor.pdf',width=8.5,height=11)
 for (n in 1:264) {
    # find indexes of active region matching this roi
    roi  <- which(spheresMat[simActivPresent] == n)
@@ -89,11 +92,19 @@ for (n in 1:264) {
    # skip if there are none
    if( length(roi) < 1 ) next
 
-   # take the mean across voxels of roi, and get corr
-   rois[n]<- cor( apply(resampVoxMat["orig",roi, ] , 2 , FUN=mean ),
-                  apply(resampVoxMat["sim", roi, ] , 2 , FUN=mean )  ) 
-   #print(paste(c,n))
+   # take the mean across voxels of roi
+   omean <- apply(resampVoxMat["orig",roi, ] , 2 , FUN=mean )
+   smean <- apply(resampVoxMat["sim", roi, ] , 2 , FUN=mean )
+
+   plot( resampTime, omean, type="l",col="blue")
+   lines(resampTime, smean, type="l",col="red")
+   
+   rois[n]<- cor( omean, smean  ) 
+
+   legend("bottomright", c("orig","sim"),lty=c(1,1),col=c("blue","red"))
+   title(paste(n,": ",rois[n]))
 }
+dev.off()
 mean(abs(rois), na.rm=TRUE)
 min(abs(rois), na.rm=TRUE)
 max(abs(rois), na.rm=TRUE)
