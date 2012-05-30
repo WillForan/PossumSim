@@ -11,6 +11,7 @@ Default
     -0.004380 -0.000148 -0.000046 -0.000001 0.000003 0.000027 0.000616 0.001904 0.003339 0.005224 0.020054 
 
  with max up to *0.2080 and min *0.0625 based on coef in activation3Dtimecourse (`| perl -slane 'print join " ", map {$_*0.0625} @F'`)
+
     -0.00091104 -3.0784e-05 -9.568e-06 -2.08e-07 6.24e-07 5.616e-06 0.000128128 0.000396032 0.000694512 0.001086592 0.004171232
     -0.00027375 -9.25e-06 -2.875e-06 -6.25e-08 1.875e-07 1.6875e-06 3.85e-05 0.000119 0.0002086875 0.0003265 0.001253375
 
@@ -22,10 +23,12 @@ Constructed
 ### Outputs
 
 on default 
-    fslstats runPossum/output/defaultActivation_1.5TR_15vol/sim/brainImage_abs.nii.gz   $(seq 0 10 100|sed 's/^/-P /')                              
+
+    fslstats runPossum/output/defaultActivation_1.5TR_15vol/sim/brainImage_abs.nii.gz   $(seq 0 10 100|sed 's/^/-P /')
     0.000000 0.026420 0.136411 0.277663 0.548555 1.376216 47.412048 50.667046 52.903187 55.634007 147.255325
 
 on constructed
+
     fslstats runPossum/output/zeroMotion_1.5TR_15vol/sim/brainImage_abs.nii.gz   $(seq 0 10 100|sed 's/^/-P /')
     0.000062 0.071509 0.180692 0.341071 0.676219 1.866770 48.506321 50.991276 53.060177 55.771019 146.422607
 
