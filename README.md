@@ -1,9 +1,14 @@
 PossumSim
 =========
-
 ## unit sanity checks
 
-### Inputs 
+### output masked by input, global mean at 1
+
+    eval/mask/genMask.sh
+    our: 0.993687 0.993687 0.993687 0.993687 0.993687 0.993687 0.993687 0.993687 0.993687 0.993687 2.440771 
+    def: 0.834861 0.963704 0.963704 0.963704 0.963704 0.963704 0.963704 0.963704 0.963704 0.963704 2.326147
+
+### Inputs  ( activation3D v. 10653_POSSUM4D_bb244_fullFreq_RPI )
 
 Default
 
@@ -20,7 +25,7 @@ Constructed
     fslstats  runPossum/inputs/10653_POSSUM4D_bb244_fullFreq_RPI.nii.gz   $(seq 0 10 100|sed 's/^/-P /')
     -0.011187 -0.000643 -0.000410 -0.000253 -0.000122 -0.000001 0.000120 0.000252 0.000414 0.000655 0.01890
 
-### Outputs
+### Outputs (brainImage_abs)
 
 on default 
 
