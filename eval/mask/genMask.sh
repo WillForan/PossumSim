@@ -11,16 +11,17 @@ function demeanPSC {
    # bring 3mm sim output (as flirt input) into simulation input 1 mm (as flirt ref) 
    # so the sim input can be used to mask the sim output
    if [ ! -r ${simName}_to_mniRPI.nii.gz ] ; then
-    flirt -in $simOutput -ref $simBrain -out ${simName}_to_mniRPI_pre \
-          -omat func_to_mniRPI.mat                                    \
-          -dof 6 -schedule ${FSLDIR}/etc/flirtsch/sch3Dtrans_3dof     \
-          -interp sinc -sincwidth 7 -sincwindow hanning
+    # generate warp mat (don't use out, will only apply to first volume -- need it on all 15)
+    flirt -in $simOutput -ref $simBrain  \
+          -omat ${simName}_to_mniRPI.mat \
+          -dof 6 -schedule ${FSLDIR}/etc/flirtsch/sch3Dtrans_3dof
+    # apply it to all (sub)volumes
     applywarp \
           --ref=$simBrain \
           --in=$simOutput \
           --out=${simName}_to_mniRPI \
-          --premat=func_to_mniRPI.mat \
-          --interp=sinc
+          --premat=${simName}_to_mniRPI.mat \
+          --interp=spline
    fi
    # *** WHY: dim t == 1!?  _to_mniRPI
 

@@ -6,15 +6,15 @@ PossumSim
 
 for both our simulation and the default simulation
 
-* warp the `3.2 x 3.2 x 3.9mm` simulation output into `1mm^3` simulation input space (this direction is conservative)
-* create mask from simulation input and apply to warped output (only look at what should change)
-* subtract the time mean from the masked warped simulation output and multiply by 100
-* look at `fslstats $(seq 0 10 100|sed 's/^/-P /')`
+* `_to_mniRPI` warp the `3.2 x 3.2 x 3.9mm` simulation output into `1mm^3` simulation input space (this direction is conservative)
+* `_MaskByInput.nii.gz` create mask from simulation input and apply to warped output (only look at what should change)
+* `_PSC.nii.gz` divide mean from the difference of the masked warped simulation and the mean across time, multiply by 100 (i-m)/m*100
+* look at `fslstats $PSC $(seq 0 10 100|sed 's/^/-P /')`
 
 eval/mask/genMask.sh
 
-    our: -18.417109 -3.472411 -2.500210 -1.944115 -1.582398 -1.303586 -1.049375 -0.811549 -0.579242 -0.184118 112.010376 
-    def:  -7.576370 -2.132534 -1.422520 -0.991997 -0.710442 -0.506592 -0.354183 -0.249141 -0.137575  0.010139  68.589577 
+    our:     -21.384027 -3.524719 -2.522913 -1.943590 -1.573372 -1.285426 -1.024168 -0.782435 -0.543973 -0.113260    127.623230 
+    def: -353183.468750 -6.853281 -4.548309 -2.980075 -2.009488 -1.414311 -1.001237 -0.690173 -0.477898  0.150954 178981.031250 
 
 ### Inputs  ( activation3D v. 10653_POSSUM4D_bb244_fullFreq_RPI )
 
