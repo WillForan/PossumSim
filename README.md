@@ -11,8 +11,8 @@ for both our simulation and the default simulation
 * subtract the time mean from the masked warped simulation output and multiply by 100
 * look at `fslstats $(seq 0 10 100|sed 's/^/-P /')`
 
+eval/mask/genMask.sh
 
-    eval/mask/genMask.sh
     our: -18.417109 -3.472411 -2.500210 -1.944115 -1.582398 -1.303586 -1.049375 -0.811549 -0.579242 -0.184118 112.010376 
     def:  -7.576370 -2.132534 -1.422520 -0.991997 -0.710442 -0.506592 -0.354183 -0.249141 -0.137575  0.010139  68.589577 
 
