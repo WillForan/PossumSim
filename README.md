@@ -6,15 +6,17 @@ PossumSim
 
 for both our simulation and the default simulation
 
+* `_steadyState.nii.gz` remove the first 5 volumes of the simulation
 * `_to_mniRPI` warp the `3.2 x 3.2 x 3.9mm` simulation output into `1mm^3` simulation input space (this direction is conservative)
 * `_MaskByInput.nii.gz` create mask from simulation input and apply to warped output (only look at what should change)
-* `_PSC.nii.gz` divide mean from the difference of the masked warped simulation and the mean across time, multiply by 100 (i-m)/m*100
-* look at `fslstats $PSC $(seq 0 10 100|sed 's/^/-P /')`
+    * use binary mask of `fslmaths -Tmax` to identify all voxels used to provide activation to possum
+* `_PSC.nii.gz` masked warped simulation/mean across time, scale 100x `100*s/m`
+* look at percentiles of percent signal change in increments of 10 `fslstats $PSC $(seq 0 10 100|sed 's/^/-P /')`
 
 eval/mask/genMask.sh
 
-    our:     -21.384027 -3.524719 -2.522913 -1.943590 -1.573372 -1.285426 -1.024168 -0.782435 -0.543973 -0.113260    127.623230 
-    def: -353183.468750 -6.853281 -4.548309 -2.980075 -2.009488 -1.414311 -1.001237 -0.690173 -0.477898  0.150954 178981.031250 
+    our:    98.202827 99.945663 99.984612 99.993546 99.997459 99.999695 100.001778 100.005592 100.014824 100.052811  102.378998 
+    def: -6479.607422 99.882957 99.972885 99.991508 99.997589 99.999557 100.000153 100.001991 100.016258 100.101547 8134.155273 
 
 ### Inputs  ( activation3D v. 10653_POSSUM4D_bb244_fullFreq_RPI )
 
