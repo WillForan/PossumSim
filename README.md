@@ -4,6 +4,14 @@ PossumSim
 
 ### output masked by input, global mean at 1
 
+for both our simulation and the default simulation
+
+* warp the 3.2x3.2x3.9mm simulation output into 1mm^3 simulation input space
+* create mask from simulation input and apply to warped output (only look at what should change)
+* find the mean over time for each voxel in the masked warped simulation output
+* subtract the time mean from the masked warped simulation output and multiply by 100
+* look at `fslstats $(seq 0 10 100|sed 's/^/-P /')`
+
     eval/mask/genMask.sh
     our: -18.417109 -3.472411 -2.500210 -1.944115 -1.582398 -1.303586 -1.049375 -0.811549 -0.579242 -0.184118 112.010376 
     def:  -7.576370 -2.132534 -1.422520 -0.991997 -0.710442 -0.506592 -0.354183 -0.249141 -0.137575  0.010139  68.589577 
