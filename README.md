@@ -2,7 +2,7 @@ PossumSim
 =========
 ## unit sanity checks
 
-### output masked by input, global mean at 1
+### Percent signal change comparison
 
 for both our simulation and the default simulation
 
