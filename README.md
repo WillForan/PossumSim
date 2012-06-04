@@ -1,8 +1,16 @@
 PossumSim
 =========
+## Simulation
+run by `runPossum/runPos.sh` see `runPossum/readme.md`
+
+## Problem
+Zero-motion simulated activation is not correlated with input activation within the brain or within the ROIs.
+`eval/Check_ActivationCorrs_11Vol.R`
+
 ## unit sanity checks
 
 ### Percent signal change comparison
+`eval/mask/PSC.sh`
 
 for both our simulation and the default simulation
 
@@ -13,7 +21,7 @@ for both our simulation and the default simulation
 * `_PSC.nii.gz` masked warped simulation/mean across time, scale 100x `100*s/m`
 * look at percentiles of percent signal change in increments of 10 `fslstats $PSC $(seq 0 10 100|sed 's/^/-P /')`
 
-eval/mask/genMask.sh
+eval/mask/PSC.sh
 
     our:    98.202827 99.945663 99.984612 99.993546 99.997459 99.999695 100.001778 100.005592 100.014824 100.052811  102.378998 
     def: -6479.607422 99.882957 99.972885 99.991508 99.997589 99.999557 100.000153 100.001991 100.016258 100.101547 8134.155273 

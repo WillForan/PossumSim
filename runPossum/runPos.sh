@@ -94,7 +94,7 @@ source mkBrains.src.sh
 set -e # die on error
 
 #for jobID in `seq 0 $((($totaljobs-1)))`; do # start at 1
-for jobID in `seq 1 $totaljobs`; do
+for jobID in `seq 0 $totaljobs`; do
 
  # stdout directed here
  logFile=${logDir}/$jobID.log 
@@ -118,7 +118,7 @@ for jobID in `seq 1 $totaljobs`; do
     --activt4D=${ActivationTimeF} \
     -o $simDir/possum_${jobID}    \
       >> $logFile &
- 
+
    # update job count
    jobcount=$(jobs|wc -l)
    

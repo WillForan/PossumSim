@@ -64,7 +64,7 @@ done
 
    MRF="$r/inputs/MRpar_3T"
    RFF="$r/inputs/slcprof"
-BrainF="$r/inputs/MNIpaddedPossumBrain.nii.gz"    # **
+BrainF="$r/inputs/possumDefault/brain.nii.gz"    # **
 
 
 #-------------------------------#
@@ -75,8 +75,8 @@ inDir="$r/inputs/${TR}TR_${numvol}vol"
 
         MotionF="$inDir/zeromotion"
          PulseF="$inDir/pulse/pulse_15"
-    ActivationF="$r/inputs/possumSTDactivation3D.nii.gz"
-ActivationTimeF="$r/inputs/possumSTDactivation3Dtimecourse"
+    ActivationF="$r/inputs/possumDefault/activation3D.nii.gz"
+ActivationTimeF="$r/inputs/possumDefault/activation3Dtimecourse"
 
 
 #-----------------------#
@@ -94,7 +94,7 @@ source mkBrains.src.sh
 set -e # die on error
 
 #for jobID in `seq 0 $((($totaljobs-1)))`; do # start at 1
-for jobID in `seq 1 $totaljobs`; do
+for jobID in `seq 0 $totaljobs`; do
 
  # stdout directed here
  logFile=${logDir}/$jobID.log 
@@ -114,10 +114,11 @@ for jobID in `seq 1 $totaljobs`; do
     -i ${BrainF}                  \
     -m ${MotionF}                 \
     -p ${PulseF}                  \
-    --activ4D=${ActivationF}      \
-    --activt4D=${ActivationTimeF} \
+    -a ${ActivationF}             \
+    -t ${ActivationTimeF}         \
     -o $simDir/possum_${jobID}    \
       >> $logFile &
+
  
    # update job count
    jobcount=$(jobs|wc -l)
@@ -151,11 +152,15 @@ combined="${simDir}/combined"
 # get an image
 echo "generating image"
 image=${simDir}/brainImage
-[ -r $image ] || signal2image -i $combined -a --homo -p $PulseF -o $image 2>&1 | tee $logDir/image.log
+[ -r ${image}_abs.nii.gz ] || signal2image -i $combined -a --homo -p $PulseF -o $image 2>&1 | tee $logDir/image.log
 
 # process possum simulation
 echo "generating preproc files"
-cd  $preDir
-../../../../activation/restPreproc_possum.bash -4d ../sim/brainImage_abs.nii.gz
+cd $simDir; simDir="$(pwd)"; cd -             # get absolute path
+ln -s $simDir/brainImage_abs.nii.gz $preDir   # link possum output to preproc dir
+
+# go there and run preproc
+cd $preDir
+../../../../activation/restPreproc_possum.bash -4d brainImage_abs.nii.gz
 
 set +e
